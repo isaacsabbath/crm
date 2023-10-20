@@ -15,7 +15,7 @@ class Customer(models.Model):
         return self.name
 
 
-class Tag(models.Model):
+class Brand(models.Model):
     name = models.CharField(max_length=200, null=True)
 
     def __str__(self):
@@ -24,8 +24,10 @@ class Tag(models.Model):
 
 class Product(models.Model):
     CATEGORY = (
-        ('Indoor', 'Indoor'),
-        ('Out Door', 'Out Door'),
+        ('Gaming', 'Gaming'),
+        ('Macbook', 'Macbook'),
+        ('Desktop', 'Desktop'),
+        ('Chromebook', 'Chromebook'),
     )
 
     name = models.CharField(max_length=200, null=True)
@@ -33,7 +35,7 @@ class Product(models.Model):
     category = models.CharField(max_length=200, null=True, choices=CATEGORY)
     description = models.CharField(max_length=200, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True, null=True)
-    tags = models.ManyToManyField(Tag) # Many to Many relationships
+    Brand = models.ManyToManyField(Brand) # Many to Many relationships
 
     def __str__(self):
         return self.name

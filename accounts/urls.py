@@ -15,6 +15,8 @@ urlpatterns = [
     path('logout/', views.logoutUser, name='logout'),
     path('user/', views.userPage, name='user-page'),
     path('account/', views.accountSettings, name='account'),
+    path('checkout/', views.createpdf, name='checkout'),
+
 
     path('reset_password/',
      auth_views.PasswordResetView.as_view(template_name="accounts/password_reset.html"),

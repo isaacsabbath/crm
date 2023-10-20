@@ -11,6 +11,12 @@ from django.contrib.auth.decorators import login_required # restricted user acce
 from .decorators import unauthenticated_user, allowed_users, admin_only # custom restricted and allowed user acces
 from django.contrib.auth.models import Group # Django signal to associated user with group
 
+
+import pdfkit
+from django.template.loader import get_template
+import os
+
+
 # Create your views here.
 @login_required(login_url='login')
 @admin_only # if customer the redirect to user-page and if admin redirect to view_func
@@ -175,7 +181,11 @@ def userPage(request):
     delivered = orders.filter(status='Delivered').count()
     pending = orders.filter(status='Pending').count()
 
-    context = {'orders':orders, 'total_orders':total_orders, 'delivered':delivered, 'pending':pending}
+    total = 0
+    for order in orders:
+        total += order.product.price
+
+    context = {'orders':orders, 'total_orders':total_orders, 'delivered':delivered, 'pending':pending, 'total':total}
     return render(request, 'accounts/user.html', context)
 
 
@@ -192,3 +202,50 @@ def accountSettings(request):
 
     context = {'form':form}
     return render(request, 'accounts/account_settings.html', context)
+
+@login_required(login_url='login')
+@allowed_users(allowed_roles=['customer'])
+def createpdf(request):
+    filename = 'report.pdf'
+    template = get_template('accounts/receipt.html')
+
+    # Get the customer associated with the logged-in user
+    customer = request.user.customer
+
+    # Retrieve the orders for the customer
+    orders = request.user.customer.order_set.all()
+
+    # Calculate the total
+    total = sum(order.product.price for order in orders)
+
+    context = {
+        'OrderSummary': 'OrderSummary',
+        'Product': 'Product',
+        'Price': 'Price',
+        'status': 'status',
+        'Date Ordered': 'Date Ordered',
+        'form.as_p': 'formas_p',
+
+        'orders': orders,  # Pass your order data here
+        'total': total,    # Pass the total here
+        'customer': customer,  # Pass the customer data here
+    }
+
+    html = template.render(context)
+
+    options = {
+        'encoding': 'UTF-8',
+        'javascript-delay': '1000',  # Optional
+        'enable-local-file-access': None,  # To be able to access CSS
+        'page-size': 'A4',
+        'custom-header': [('Accept-Encoding', 'gzip')],
+    }
+
+    config = pdfkit.configuration(wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+
+    file_content = pdfkit.from_string(html, False, configuration=config, options=options)
+
+    response = HttpResponse(file_content, content_type='application/pdf')
+    response['Content-Disposition'] = 'inline; filename = {}'.format(filename)
+
+    return response
